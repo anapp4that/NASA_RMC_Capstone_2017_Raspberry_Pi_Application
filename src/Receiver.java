@@ -30,15 +30,19 @@ public class Receiver extends Thread {
                 DataInputStream in = new DataInputStream(raspberryPi.getInputStream());
                 while (true) {
                     int length = in.readInt();
-                    if (length >= 0 && length < 20000) {
+                    if (length >= 0 && length < 3) {
                         byte[] transmission = new byte[length];
                         in.readFully(transmission, 0, transmission.length);
                         BitSet bitArray = BitSet.valueOf(transmission);
                         System.out.print("ByteArray = " + bitArray.toString() + "\n");
+                    } else {
+                        Thread.sleep(200);
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
             }
         }
     }
