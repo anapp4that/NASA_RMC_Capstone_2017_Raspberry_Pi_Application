@@ -1,4 +1,5 @@
-import com.pi4j.io.serial.*;
+import com.pi4j.io.serial.Serial;
+import com.pi4j.io.serial.SerialFactory;
 
 import java.io.IOException;
 import java.util.BitSet;
@@ -31,7 +32,7 @@ public class Translator{
 	public void sendArray(BitSet incbitArray)
 	{
 		bitArray = incbitArray;
-		byte[] currentByteArray = translateArray();
+		byte[] currentByteArray = translateArray(incbitArray);
 
 
 		//Compare bitArray's after translation.
@@ -48,14 +49,17 @@ public class Translator{
 
 
 		//Send the byteArray after we have verified if things are different or not.
+		byte[] sendingArray = new byte[needsSending.size()];
+		for (int i = 0; i < needsSending.size(); i++)
+			sendingArray[i] = needsSending.get(i);
 		previousSend = currentByteArray;
 	}
 
-	private byte[] translateArray()
+	private byte[] translateArray(BitSet incBitArray)
 	{
-		BitSet armArray = bitArray.get(0, 1);
-		BitSet leftArray = bitArray.get(1, 5);
-		BitSet rightArray = bitArray.get(5, 9);
+		BitSet leftArray = incBitArray.get(0, 3 + 1);
+		BitSet rightArray = incBitArray.get(4, 7 + 1);
+		BitSet armArray = incBitArray.get(8, 9 + 1);
 
 		byte[] translatedByteArray = new byte[NUM_BYTES_TO_BE_SENT];
 
@@ -71,6 +75,7 @@ public class Translator{
 
 
 		//translation should result in an array of bytes. return these bytes to the sending function.
+		return translatedByteArray;
 	}
 	
 	public void killTranslator() throws IllegalStateException,
