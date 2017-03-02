@@ -6,12 +6,14 @@ import java.util.BitSet;
 public class Receiver extends Thread {
 
     Socket raspberryPi;
+    Translator translator;
 
     public Receiver(String serverName, int port) {
         try {
             System.out.print("Connecting to " + serverName + " on port " + port + "\n");
             raspberryPi = new Socket(serverName, port);
             raspberryPi.setKeepAlive(true);
+            translator = new Translator();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -33,8 +35,12 @@ public class Receiver extends Thread {
                     if (length >= 0 && length < 3) {
                         byte[] transmission = new byte[length];
                         in.readFully(transmission, 0, transmission.length);
-                        BitSet bitArray = BitSet.valueOf(transmission);
-                        System.out.print("ByteArray = " + bitArray.toString() + "\n");
+                        if (length > 0) {
+                            BitSet bitArray = BitSet.valueOf(transmission);
+                            translator.sendArray(bitArray);
+                        } else {
+                            translator.sendArray(new BitSet(9));
+                        }
                     } else {
                         Thread.sleep(200);
                     }
