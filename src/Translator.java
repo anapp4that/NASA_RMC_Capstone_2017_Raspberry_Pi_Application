@@ -1,10 +1,10 @@
-import com.pi4j.io.serial.Serial;
-import com.pi4j.io.serial.SerialFactory;
+import com.pi4j.io.serial.*;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.BitSet;
-
+import java.util.LinkedList;
+import java.util.List;
 
 
 public class Translator{
@@ -14,6 +14,7 @@ public class Translator{
 	final Serial serial;
 	byte[] previousSend;
 	private BitSet bitArray;
+	private SerialConfig config;
 	
 	public Translator()
 	{
@@ -21,6 +22,31 @@ public class Translator{
 		bitArray = new BitSet(9);
 		serial = SerialFactory.createInstance();
 		previousSend = new byte[NUM_BYTES_TO_BE_SENT];
+		serial.addListener(new SerialDataEventListener() {
+			public void dataReceived(SerialDataEvent event) {
+				try {
+					System.out.print("[HEX DATA] " + event.getHexByteString());
+					System.out.print("[ASCII DATA] " + event.getAsciiString());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+
+		try {
+			config = new SerialConfig();
+			config.device(SerialPort.getDefaultPort())
+					.baud(Baud._9600)
+					.dataBits(DataBits._7)
+					.parity(Parity.NONE)
+					.stopBits(StopBits._1)
+					.flowControl(FlowControl.NONE);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -35,24 +61,31 @@ public class Translator{
 
 		System.out.print(Arrays.toString(currentByteArray) + "\n");
 
-//		//Compare bitArray's after translation.
-//		List<byte> needsSending = new LinkedList<byte>();
-//		for (int i = 0; i < NUM_BYTES_TO_BE_SENT; i++) {
-//			if (currentByteArray[i] != previousSend[i]) {
-//				needsSending.add(currentByteArray[i]);
-//			}
-//		}
-//
-//		if (needsSending.size() <= 0) {
-//			return;
-//		}
-//
-//
-//		//Send the byteArray after we have verified if things are different or not.
-//		byte[] sendingArray = new byte[needsSending.size()];
-//		for (int i = 0; i < needsSending.size(); i++)
-//			sendingArray[i] = needsSending.get(i);
-//		previousSend = currentByteArray;
+		//Compare bitArray's after translation.
+		List<byte> needsSending = new LinkedList<byte>();
+		for (int i = 0; i < NUM_BYTES_TO_BE_SENT; i++) {
+			if (currentByteArray[i] != previousSend[i]) {
+				needsSending.add(currentByteArray[i]);
+			}
+		}
+
+		if (needsSending.size() <= 0) {
+			return;
+		}
+
+
+		//Send the byteArray after we have verified if things are different or not.
+		byte[] sendingArray = new byte[needsSending.size()];
+		for (int i = 0; i < needsSending.size(); i++)
+			sendingArray[i] = needsSending.get(i);
+		previousSend = currentByteArray;
+		try {
+			serial.open(config);
+			serial.write(sendingArray);
+			serial.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private byte[] translateArray(BitSet incBitArray) {
