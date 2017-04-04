@@ -62,7 +62,7 @@ public class Translator{
 		System.out.print(Arrays.toString(currentByteArray) + "\n");
 
 		//Compare bitArray's after translation.
-		List<byte> needsSending = new LinkedList<byte>();
+		List needsSending = new LinkedList();
 		for (int i = 0; i < NUM_BYTES_TO_BE_SENT; i++) {
 			if (currentByteArray[i] != previousSend[i]) {
 				needsSending.add(currentByteArray[i]);
@@ -77,7 +77,7 @@ public class Translator{
 		//Send the byteArray after we have verified if things are different or not.
 		byte[] sendingArray = new byte[needsSending.size()];
 		for (int i = 0; i < needsSending.size(); i++)
-			sendingArray[i] = needsSending.get(i);
+			sendingArray[i] = (byte) needsSending.get(i);
 		previousSend = currentByteArray;
 		try {
 			serial.open(config);
