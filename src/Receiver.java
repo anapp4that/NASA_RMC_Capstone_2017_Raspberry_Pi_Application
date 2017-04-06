@@ -35,10 +35,20 @@ public class Receiver extends Thread {
             try {
                 DataInputStream in = new DataInputStream(raspberryPi.getInputStream());
 
-                byte[] transmission = new byte[3];
-                in.read(transmission);
+                String transmission = in.readUTF();
+                
+                BitSet bitArray = new BitSet(13);
+                
+                for(int x = 0; x < 13; x++)
+                {
+                	if(transmission.charAt(x) == '1')
+                	{
+                		bitArray.set(x);
+                	}
+                }
+                
                 //if (length > 0) {
-                            BitSet bitArray = BitSet.valueOf(transmission);
+                            //BitSet bitArray = BitSet.valueOf(transmission);
                 System.out.print(bitArray.toString());
                 // translator.sendArray(bitArray);
                 //} else {
