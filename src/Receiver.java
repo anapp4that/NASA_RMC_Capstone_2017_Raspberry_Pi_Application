@@ -1,7 +1,6 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.BitSet;
 
@@ -16,7 +15,6 @@ public class Receiver extends Thread {
         try {
             raspberryPi = new Socket(SERVER_IP_ADDRESS, SERVER_PORT);
             DataOutputStream out = new DataOutputStream(raspberryPi.getOutputStream());
-            PrintWriter printWriter = new PrintWriter(out, true);
             out.writeUTF("rasp");
             raspberryPi.setKeepAlive(true);
             //translator = new Translator();
@@ -36,20 +34,20 @@ public class Receiver extends Thread {
                 DataInputStream in = new DataInputStream(raspberryPi.getInputStream());
 
                 String transmission = in.readUTF();
-                
+                System.out.print(transmission);
+
                 BitSet bitArray = new BitSet(13);
-                
-                for(int x = 0; x < 13; x++)
-                {
-                	if(transmission.charAt(x) == '1')
-                	{
-                		bitArray.set(x);
-                	}
+
+                for (int x = 0; x < 13; x++) {
+                    if (transmission.charAt(x) == '1') {
+                        bitArray.set(x);
+                    }
                 }
-                
+
                 //if (length > 0) {
-                            //BitSet bitArray = BitSet.valueOf(transmission);
-                System.out.print(bitArray.toString());
+                //BitSet bitArray = BitSet.valueOf(transmission);
+                System.out.print(bitArray.toString() + "\n");
+
                 // translator.sendArray(bitArray);
                 //} else {
                 // translator.sendArray(new BitSet(9));
@@ -59,4 +57,5 @@ public class Receiver extends Thread {
             }
         }
     }
+
 }
