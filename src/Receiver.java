@@ -1,23 +1,36 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.util.BitSet;
 
 public class Receiver extends Thread {
 
-    public static final int SERVER_PORT = 6001;
+    public static final int SERVER_PORT_1 = 6001;
+    public static final int SERVER_PORT_2 = 6000;
     public static final String SERVER_IP_ADDRESS = "uaf135300.ddns.uark.edu";
     Socket raspberryPi;
     Translator translator;
 
     public Receiver() {
         try {
-            raspberryPi = new Socket(SERVER_IP_ADDRESS, SERVER_PORT);
+            raspberryPi = new Socket(SERVER_IP_ADDRESS, SERVER_PORT_1);
             DataOutputStream out = new DataOutputStream(raspberryPi.getOutputStream());
             out.writeUTF("rasp");
             raspberryPi.setKeepAlive(true);
             //translator = new Translator();
+        } catch (ConnectException cex) {
+            try {
+                raspberryPi = new Socket(SERVER_IP_ADDRESS, SERVER_PORT_2);
+                DataOutputStream out = new DataOutputStream(raspberryPi.getOutputStream());
+                out.writeUTF("rasp");
+                raspberryPi.setKeepAlive(true);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                System.out.print("Server is not online.");
+                return;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
