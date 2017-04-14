@@ -10,18 +10,19 @@ import java.util.List;
 public class Translator{
 
 
-	public static final int NUM_BYTES_TO_BE_SENT = 5;
+	public static final int NUM_BYTES_TO_BE_SENT_X = 5;
+	public static final int NUM_BYTES_TO_BE_SENT_Y = 3;
 	final Serial serial;
-	byte[] previousSend;
+	byte[][] previousSend;
 	private BitSet bitArray;
 	private SerialConfig config;
 	
 	public Translator()
 	{
 
-		bitArray = new BitSet(9);
+		bitArray = new BitSet(21);
 		serial = SerialFactory.createInstance();
-		previousSend = new byte[NUM_BYTES_TO_BE_SENT];
+		previousSend = new byte[NUM_BYTES_TO_BE_SENT_X][NUM_BYTES_TO_BE_SENT_Y];
 		serial.addListener(new SerialDataEventListener() {
 			public void dataReceived(SerialDataEvent event) {
 				try {
@@ -50,6 +51,7 @@ public class Translator{
 
 	}
 
+	
 	private static BitSet fromString(final String s) {
 		return BitSet.valueOf(new long[]{Long.parseLong(s, 2)});
 	}
@@ -57,14 +59,14 @@ public class Translator{
 	public void sendArray(BitSet incbitArray)
 	{
 		bitArray = incbitArray;
-		byte[] currentByteArray = translateArray(incbitArray);
+		byte[][] currentByteArray = translateArray(incbitArray);
 
 		System.out.print(Arrays.toString(currentByteArray) + "\n");
 
 		//Compare bitArray's after translation.
 		List needsSending = new LinkedList();
-		for (int i = 0; i < NUM_BYTES_TO_BE_SENT; i++) {
-			if (currentByteArray[i] != previousSend[i]) {
+		for (int i = 0; i < NUM_BYTES_TO_BE_SENT_X; i++) {
+			if (!(Arrays.equals(currentByteArray[i], previousSend[i]))) {
 				needsSending.add(currentByteArray[i]);
 			}
 		}
@@ -88,65 +90,63 @@ public class Translator{
 		}
 	}
 
-	private byte[] translateArray(BitSet incBitArray) {
+	private byte[][] translateArray(BitSet incBitArray) {
 		//BitSet leftArray = incBitArray.get(0, 3 + 1);
 		//BitSet rightArray = incBitArray.get(4, 7 + 1);
 		//BitSet armArray = incBitArray.get(8, 9 + 1);
 
-		byte[] translatedByteArray = new byte[NUM_BYTES_TO_BE_SENT];
+		//incoming bits
+		//0 is direction for left side, motors 0 and 1
+		//1-8 left side speed, motors 0 and 1
+		//9 is direction for right side, motors 2 and 3
+		//10-17 right side speed, motors 2 and 3
+		//18-19 drum control, motor 4
+		//20-21 arm control
+		
+		byte[][] translatedByteArray = new byte[NUM_BYTES_TO_BE_SENT_X][NUM_BYTES_TO_BE_SENT_Y];
 
-		//translate here
-		//translatedByteArray index meanings:
-		//index 0: front left motor  3SpeedBitsDirection000
-		//index 1: back left motor   3SpeedBitsDirection001
-		//index 2: front right motor 3SpeedBitsDirection010
-		//index 3: back right motor  3SpeedBitsDirection011
-		//index 4: excavation motor  3SpeedBitsDirection100
-		//bytes are in little endian interpretation
-		//each sent bit will only be 7 data bits. because that's all we need.
-		//ANY FUTURE THINGS NEEDED TO BE DONE WILL HAVE TO BE APPENDED TO THIS BYTE ARRAY
-		//These are all subject to change once the EE's complete their design
-
-
-		//Index 0
-		BitSet translationBitSet = new BitSet(8);
-		translationBitSet.set(0, 2 + 1, false);
-		translationBitSet.set(3, incBitArray.get(0));
-		translationBitSet.set(4, incBitArray.get(1));
-		translationBitSet.set(5, incBitArray.get(2));
-		translationBitSet.set(6, incBitArray.get(3));
-		if (translationBitSet.toByteArray().length > 0)
-			translatedByteArray[0] = translationBitSet.toByteArray()[0];
-
-		//index 1
-		translationBitSet.set(2, true);
-		if (translationBitSet.toByteArray().length > 0)
-			translatedByteArray[1] = translationBitSet.toByteArray()[0];
-
-		//Index 2
-		translationBitSet.set(2, false);
-		translationBitSet.set(1, true);
-		translationBitSet.set(3, incBitArray.get(4));
-		translationBitSet.set(4, incBitArray.get(5));
-		translationBitSet.set(5, incBitArray.get(6));
-		translationBitSet.set(6, incBitArray.get(7));
-		if (translationBitSet.toByteArray().length > 0)
-			translatedByteArray[2] = translationBitSet.toByteArray()[0];
-
-		//Index 3
-		translationBitSet.set(2, true);
-		if (translationBitSet.toByteArray().length > 0)
-			translatedByteArray[3] = translationBitSet.toByteArray()[0];
-
-		//Index 4
-		translationBitSet.set(1, 2 + 1, false);
-		translationBitSet.set(0, true);
-		translationBitSet.set(3, incBitArray.get(8));
-		translationBitSet.set(4, 6 + 1, true);
-		if (translationBitSet.toByteArray().length > 0)
-			translatedByteArray[4] = translationBitSet.toByteArray()[0];
-		// PROBABLY SHOULD ASK EE's IF THIS IS AN OKAY SPEED. MOST LIKELY ISN'T BUT IT's TEMPORARY
-
+		BitSet translationBitSet;
+		
+		//x + y + (index % 8) allows the x position of translationBitSet
+		//to increase to 2 and 3 even though x + y will only equal 1 and 2
+		//when addressing the left side wheels, index will = 0, so the % op will = 0
+		//when addressing the right side wheels, index will = 9 and the % op will = 1
+		
+		
+		//set wheel motors
+		for(int x = 0; x < 2; x++)
+		{
+			for(int y = 0; y < 2; y++)
+			{
+				translationBitSet = new BitSet(8);
+				
+				int index = x * 9;
+				//set address
+				translationBitSet.set(0, y == 1);
+				translationBitSet.set(1, x == 1);
+				if (translationBitSet.toByteArray().length > 0)
+					translatedByteArray[x + y + (index % 8)][0] = translationBitSet.toByteArray()[0];
+				
+				//set direction
+				translationBitSet.set(0, incBitArray.get(index));
+				if (translationBitSet.toByteArray().length > 0)
+					translatedByteArray[x + y + (index % 8)][1] = translationBitSet.toByteArray()[0];
+				
+				//set speed
+				translationBitSet.set(0, incBitArray.get(index + 1));
+				translationBitSet.set(1, incBitArray.get(index + 2));
+				translationBitSet.set(2, incBitArray.get(index + 3));
+				translationBitSet.set(3, incBitArray.get(index + 4));
+				translationBitSet.set(4, incBitArray.get(index + 5));
+				translationBitSet.set(5, incBitArray.get(index + 6));
+				translationBitSet.set(6, incBitArray.get(index + 7));
+				translationBitSet.set(7, incBitArray.get(index + 8));
+				
+				if (translationBitSet.toByteArray().length > 0)
+					translatedByteArray[x + y + (index % 8)][2] = translationBitSet.toByteArray()[0];
+			}
+		}
+		
 		//translation should result in an array of bytes. return these bytes to the sending function.
 		return translatedByteArray;
 	}
