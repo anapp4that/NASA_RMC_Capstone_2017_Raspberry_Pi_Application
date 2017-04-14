@@ -49,10 +49,10 @@ public class Receiver extends Thread {
                 String transmission = in.readUTF();
                 System.out.print(transmission);
 
-                BitSet bitArray = new BitSet(13);
+                BitSet bitArray = new BitSet(22);
 
-                for (int x = 0; x < 13; x++) {
-                    if (transmission.charAt(x) == '1') {
+                for (int x = 21; x >= 0; x--) {
+                    if (transmission.charAt(21 - x) == '1') {
                         bitArray.set(x);
                     }
                 }
