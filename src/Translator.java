@@ -1,6 +1,5 @@
-import com.pi4j.io.serial.*;
+import com.pi4j.io.serial.SerialConfig;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.LinkedList;
@@ -12,7 +11,7 @@ public class Translator{
 
 	public static final int NUM_BYTES_TO_BE_SENT_X = 5;
 	public static final int NUM_BYTES_TO_BE_SENT_Y = 3;
-	final Serial serial;
+	//final Serial serial;
 	byte[][] previousSend;
 	private BitSet bitArray;
 	private SerialConfig config;
@@ -21,33 +20,33 @@ public class Translator{
 	{
 
 		bitArray = new BitSet(21);
-		serial = SerialFactory.createInstance();
+		//serial = SerialFactory.createInstance();
 		previousSend = new byte[NUM_BYTES_TO_BE_SENT_X][NUM_BYTES_TO_BE_SENT_Y];
-		serial.addListener(new SerialDataEventListener() {
-			public void dataReceived(SerialDataEvent event) {
-				try {
-					System.out.print("[HEX DATA] " + event.getHexByteString());
-					System.out.print("[ASCII DATA] " + event.getAsciiString());
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		});
+//		serial.addListener(new SerialDataEventListener() {
+//			public void dataReceived(SerialDataEvent event) {
+//				try {
+//					System.out.print("[HEX DATA] " + event.getHexByteString());
+//					System.out.print("[ASCII DATA] " + event.getAsciiString());
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		});
 
-		try {
-			config = new SerialConfig();
-			config.device(SerialPort.getDefaultPort())
-					.baud(Baud._9600)
-					.dataBits(DataBits._7)
-					.parity(Parity.NONE)
-					.stopBits(StopBits._1)
-					.flowControl(FlowControl.NONE);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			config = new SerialConfig();
+//			config.device(SerialPort.getDefaultPort())
+//					.baud(Baud._9600)
+//					.dataBits(DataBits._7)
+//					.parity(Parity.NONE)
+//					.stopBits(StopBits._1)
+//					.flowControl(FlowControl.NONE);
+//
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
 
 	}
 
@@ -67,7 +66,9 @@ public class Translator{
 		List needsSending = new LinkedList();
 		for (int i = 0; i < NUM_BYTES_TO_BE_SENT_X; i++) {
 			if (!(Arrays.equals(currentByteArray[i], previousSend[i]))) {
-				needsSending.add(currentByteArray[i]);
+				for (int j = 0; j < NUM_BYTES_TO_BE_SENT_Y; j++) {
+					needsSending.add(currentByteArray[i][j]);
+				}
 			}
 		}
 
@@ -81,13 +82,14 @@ public class Translator{
 		for (int i = 0; i < needsSending.size(); i++)
 			sendingArray[i] = (byte) needsSending.get(i);
 		previousSend = currentByteArray;
-		try {
+		/*try {
 			serial.open(config);
 			serial.write(sendingArray);
 			serial.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		*/
 	}
 
 	private byte[][] translateArray(BitSet incBitArray) {
@@ -125,12 +127,12 @@ public class Translator{
 				translationBitSet.set(0, y == 1);
 				translationBitSet.set(1, x == 1);
 				if (translationBitSet.toByteArray().length > 0)
-					translatedByteArray[x + y + (index % 8)][0] = translationBitSet.toByteArray()[0];
+					translatedByteArray[2 * x + y][0] = translationBitSet.toByteArray()[0];
 				
 				//set direction
 				translationBitSet.set(0, incBitArray.get(index));
 				if (translationBitSet.toByteArray().length > 0)
-					translatedByteArray[x + y + (index % 8)][1] = translationBitSet.toByteArray()[0];
+					translatedByteArray[2 * x + y][1] = translationBitSet.toByteArray()[0];
 				
 				//set speed
 				translationBitSet.set(0, incBitArray.get(index + 1));
@@ -143,26 +145,25 @@ public class Translator{
 				translationBitSet.set(7, incBitArray.get(index + 8));
 				
 				if (translationBitSet.toByteArray().length > 0)
-					translatedByteArray[x + y + (index % 8)][2] = translationBitSet.toByteArray()[0];
+					translatedByteArray[2 * x + y][2] = translationBitSet.toByteArray()[0];
 			}
 		}
-		
 		//translation should result in an array of bytes. return these bytes to the sending function.
 		return translatedByteArray;
 	}
-	
-	public void killTranslator() throws IllegalStateException,
-    IOException
-	{
-		try
-		{
-			serial.close();
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-		}
-	}
+
+//	public void killTranslator() throws IllegalStateException,
+//    IOException
+//	{
+//		try
+//		{
+//			serial.close();
+//		}
+//		catch(IOException e)
+//		{
+//			e.printStackTrace();
+//		}
+//	}
 
 	
 }

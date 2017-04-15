@@ -19,7 +19,7 @@ public class Receiver extends Thread {
             DataOutputStream out = new DataOutputStream(raspberryPi.getOutputStream());
             out.writeUTF("rasp");
             raspberryPi.setKeepAlive(true);
-            //translator = new Translator();
+            translator = new Translator();
         } catch (ConnectException cex) {
             try {
                 raspberryPi = new Socket(SERVER_IP_ADDRESS, SERVER_PORT_2);
@@ -61,10 +61,7 @@ public class Receiver extends Thread {
                 //BitSet bitArray = BitSet.valueOf(transmission);
                 System.out.print(bitArray.toString() + "\n");
 
-                // translator.sendArray(bitArray);
-                //} else {
-                // translator.sendArray(new BitSet(9));
-                //}
+                translator.sendArray(bitArray);
             } catch (IOException e) {
                 e.printStackTrace();
             }
