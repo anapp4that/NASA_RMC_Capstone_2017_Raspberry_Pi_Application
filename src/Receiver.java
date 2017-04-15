@@ -5,40 +5,35 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.util.BitSet;
 
-public class Receiver extends Thread {
+public class Receiver {
 
-    public static final int SERVER_PORT_1 = 6001;
-    public static final int SERVER_PORT_2 = 6000;
+    public static final int SERVER_PORT = 6001;
     public static final String SERVER_IP_ADDRESS = "uaf135300.ddns.uark.edu";
     Socket raspberryPi;
     Translator translator;
 
-    public Receiver() {
-        try {
-            raspberryPi = new Socket(SERVER_IP_ADDRESS, SERVER_PORT_1);
-            DataOutputStream out = new DataOutputStream(raspberryPi.getOutputStream());
-            out.writeUTF("rasp");
-            raspberryPi.setKeepAlive(true);
-            translator = new Translator();
-        } catch (ConnectException cex) {
+    public Receiver() throws IOException {
+        translator = new Translator();
+        while (true) {
             try {
-                raspberryPi = new Socket(SERVER_IP_ADDRESS, SERVER_PORT_2);
-                DataOutputStream out = new DataOutputStream(raspberryPi.getOutputStream());
-                out.writeUTF("rasp");
-                raspberryPi.setKeepAlive(true);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                System.out.print("Server is not online.");
-                return;
+                raspberryPi = new Socket(SERVER_IP_ADDRESS, SERVER_PORT);
+            } catch (ConnectException cex) {
+                continue;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            break;
         }
+        DataOutputStream out = new DataOutputStream(raspberryPi.getOutputStream());
+        out.writeUTF("rasp");
+        raspberryPi.setKeepAlive(true);
     }
 
     public static void main(String args[]) {
-        Thread receiverThread = new Receiver();
-        receiverThread.start();
+        try {
+            Receiver receiver = new Receiver();
+            receiver.run();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     public void run() {
